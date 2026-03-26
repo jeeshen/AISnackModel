@@ -14,11 +14,10 @@ from inference import analyze_image, load_class_mapping, load_prices, load_train
 
 ROOT = Path(__file__).parent
 
-# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AISnack",
     page_icon="assets/icon.png" if (ROOT / "assets/icon.png").exists() else None,
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded",
 )
 
@@ -28,196 +27,241 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    *, html, body, [class*="css"] {
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
+                     "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        box-sizing: border-box;
     }
 
-    /* Page background */
-    .stApp {
-        background: linear-gradient(145deg, #EEF2FF 0%, #F8FAFC 55%, #EDF7FF 100%);
-        min-height: 100vh;
+    /* ── Page ── */
+    .stApp { background-color: #F2F2F7; }
+
+    /* ── Remove Streamlit chrome ── */
+    #MainMenu, footer, header { visibility: hidden; }
+
+    .block-container {
+        padding: 40px 24px 64px 24px !important;
+        max-width: 780px !important;
     }
 
-    /* Sidebar */
+    /* ── Sidebar ── */
     [data-testid="stSidebar"] {
-        background: #FFFFFF;
-        border-right: 1px solid rgba(0, 0, 0, 0.07);
-        box-shadow: 2px 0 24px rgba(0, 0, 0, 0.04);
+        background-color: #FFFFFF;
+        border-right: 1px solid #E5E5EA;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding: 28px 20px;
     }
 
-    /* App header banner */
+    /* ── App header ── */
     .app-header {
-        background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-        border-radius: 20px;
-        padding: 28px 32px;
-        margin-bottom: 24px;
-        box-shadow: 0 8px 32px rgba(0, 122, 255, 0.25);
+        margin-bottom: 6px;
     }
-    .app-header h1 {
-        font-size: 34px !important;
-        font-weight: 800 !important;
-        color: #FFFFFF !important;
-        letter-spacing: -1px;
-        margin: 0 0 4px 0 !important;
-        padding: 0 !important;
-    }
-    .app-header p {
-        color: rgba(255, 255, 255, 0.72);
-        font-size: 15px;
+    .app-title {
+        font-size: 36px;
+        font-weight: 800;
+        color: #1C1C1E;
+        letter-spacing: -1.2px;
+        line-height: 1;
         margin: 0;
     }
-
-    /* Generic white card */
-    .card {
-        background: #FFFFFF;
-        border-radius: 18px;
-        padding: 24px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
-        border: 1px solid rgba(0, 0, 0, 0.04);
+    .app-dot {
+        color: #007AFF;
+    }
+    .app-subtitle {
+        font-size: 15px;
+        color: #8E8E93;
+        margin-top: 6px;
+        font-weight: 400;
     }
 
-    /* Image card — extra breathing room */
-    .image-card {
-        background: #FFFFFF;
-        border-radius: 22px;
-        padding: 14px;
-        margin-bottom: 22px;
-        box-shadow: 0 6px 40px rgba(0, 0, 0, 0.09);
-        border: 1px solid rgba(0, 0, 0, 0.04);
-    }
-
-    /* Stats chips row */
-    .stats-bar {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .stat-chip {
-        background: #FFFFFF;
-        border-radius: 50px;
-        padding: 8px 18px;
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        font-size: 14px;
-        font-weight: 500;
-        color: #1C1C1E;
-    }
-    .stat-chip-accent {
-        background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-        color: #FFFFFF !important;
+    /* ── Divider ── */
+    .divider {
+        height: 1px;
+        background-color: #E5E5EA;
         border: none;
-        box-shadow: 0 4px 16px rgba(0, 122, 255, 0.30);
+        margin: 20px 0;
     }
 
-    /* Section label */
+    /* ── Section label ── */
     .section-label {
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.10em;
+        letter-spacing: 0.09em;
         text-transform: uppercase;
         color: #8E8E93;
         margin-bottom: 10px;
+        padding-left: 2px;
     }
 
-    /* Price breakdown grid */
-    .breakdown-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-        gap: 12px;
-        margin-bottom: 4px;
+    /* ── Cards ── */
+    .ios-card {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 18px 20px;
+        margin-bottom: 12px;
     }
-    .breakdown-item {
-        background: #F4F6FF;
-        border-radius: 14px;
-        padding: 16px 18px;
-        border: 1px solid rgba(0, 0, 0, 0.04);
+    .img-card {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 14px;
+        margin-bottom: 16px;
+        /* ensure image takes full height */
+        min-height: 480px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
-    .breakdown-item-name {
-        font-size: 13px;
-        font-weight: 700;
+    /* Make Streamlit image inside img-card fill it */
+    .img-card img {
+        border-radius: 10px;
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    /* ── Upload zone ── */
+    [data-testid="stFileUploader"] {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 8px 12px;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 64px 24px;
+        text-align: center;
+        margin-top: 14px;
+    }
+    .empty-icon {
+        font-size: 52px;
+        line-height: 1;
+        margin-bottom: 18px;
+    }
+    .empty-title {
+        font-size: 17px;
+        font-weight: 600;
         color: #1C1C1E;
-        margin-bottom: 3px;
+        margin-bottom: 6px;
     }
-    .breakdown-item-meta {
-        font-size: 12px;
+    .empty-sub {
+        font-size: 15px;
         color: #8E8E93;
-        margin-bottom: 10px;
-    }
-    .breakdown-item-price {
-        font-size: 20px;
-        font-weight: 800;
-        color: #007AFF;
-        letter-spacing: -0.4px;
     }
 
-    /* Total card */
-    .total-card {
-        background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-        border-radius: 18px;
-        padding: 22px 28px;
+    /* ── Price rows ── */
+    .price-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 14px;
-        box-shadow: 0 8px 32px rgba(0, 122, 255, 0.28);
+        padding: 14px 0;
+        border-bottom: 1px solid #F2F2F7;
     }
-    .total-card-label {
-        font-size: 13px;
-        font-weight: 700;
-        color: rgba(255, 255, 255, 0.75);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-    .total-card-value {
-        font-size: 36px;
-        font-weight: 800;
-        color: #FFFFFF;
-        letter-spacing: -1.2px;
-    }
-
-    /* Upload zone */
-    [data-testid="stFileUploader"] {
-        background: #FFFFFF;
-        border-radius: 18px;
-        padding: 8px;
-        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Sidebar info tiles */
-    .info-tile {
-        background: #F4F6FF;
-        border-radius: 12px;
-        padding: 11px 14px;
-        margin-bottom: 8px;
-    }
-    .info-tile-label {
-        font-size: 10px;
-        color: #8E8E93;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-    .info-tile-value {
-        font-size: 14px;
-        color: #1C1C1E;
+    .price-row:last-child { border-bottom: none; }
+    .price-item-name {
+        font-size: 15px;
         font-weight: 500;
+        color: #1C1C1E;
+    }
+    .price-item-meta {
+        font-size: 13px;
+        color: #8E8E93;
         margin-top: 2px;
     }
-
-    /* Hide Streamlit chrome */
-    #MainMenu, footer { visibility: hidden; }
-
-    hr {
-        border: none;
-        border-top: 1px solid #F0F0F0;
-        margin: 16px 0;
+    .price-item-value {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1C1C1E;
+        white-space: nowrap;
     }
+
+    /* ── Total bar ── */
+    .total-bar {
+        background: #007AFF;
+        border-radius: 20px;
+        padding: 22px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .total-label {
+        font-size: 15px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.80);
+        letter-spacing: 0.01em;
+    }
+    .total-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #FFFFFF;
+        letter-spacing: -0.8px;
+    }
+
+    /* ── Detection badge ── */
+    .det-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #E8F3FF;
+        color: #007AFF;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        padding: 5px 12px;
+        border-radius: 100px;
+        margin-bottom: 10px;
+    }
+
+    /* ── No detections state ── */
+    .no-det-card {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 44px 24px;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+    .no-det-icon { font-size: 40px; margin-bottom: 12px; }
+    .no-det-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1C1C1E;
+        margin-bottom: 4px;
+    }
+    .no-det-sub { font-size: 13px; color: #8E8E93; }
+
+    /* ── Sidebar styles ── */
+    .sb-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #8E8E93;
+        margin: 0 0 10px 0;
+    }
+    .sb-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 10px 0;
+        border-bottom: 1px solid #F2F2F7;
+    }
+    .sb-info-row:last-child { border-bottom: none; }
+    .sb-info-key {
+        font-size: 14px;
+        color: #8E8E93;
+    }
+    .sb-info-val {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1C1C1E;
+    }
+
+    /* ── Streamlit component overrides ── */
+    h1, h2, h3 { color: #1C1C1E !important; }
+    .stSlider [data-testid="stTickBar"] { display: none; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -242,13 +286,12 @@ def load_resources():
 
 # ── Annotation ────────────────────────────────────────────────────────────────
 def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    img_rgb   = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     h_px, w_px = img_rgb.shape[:2]
 
-    # Wide figure so the image fills the full-width card clearly
-    fig_w = 18
-    fig_h = max(fig_w * h_px / w_px, 10)
-
+    # Keep aspect ratio; render large so text is crisp
+    fig_w = 14
+    fig_h = fig_w * h_px / w_px
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#FFFFFF")
@@ -269,7 +312,7 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
             color_idx += 1
         color = label_color[label]
 
-        lw = max(2, w_px // 400)
+        lw = max(2, w_px // 500)
         ax.add_patch(mpatches.FancyBboxPatch(
             (x, y), w, h,
             boxstyle="square,pad=0",
@@ -278,7 +321,7 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
             facecolor="none",
         ))
 
-        fs = max(9, w_px // 200)
+        fs = max(9, w_px // 240)
         ax.text(
             x + lw + 2, y + lw + 2,
             f"{label.replace('_', ' ')}  {conf:.0%}",
@@ -286,8 +329,8 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
             fontsize=fs,
             fontweight="semibold",
             va="top",
-            bbox=dict(facecolor=color, alpha=0.92, pad=4, linewidth=0,
-                      boxstyle="round,pad=0.35"),
+            bbox=dict(facecolor=color, alpha=0.92, pad=3.5,
+                      linewidth=0, boxstyle="round,pad=0.3"),
         )
 
     if label_color:
@@ -298,35 +341,24 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
         ax.legend(
             handles=legend,
             loc="upper right",
-            fontsize=max(9, w_px // 250),
+            fontsize=max(9, w_px // 280),
             framealpha=0.95,
             edgecolor="#E5E5EA",
             facecolor="#FFFFFF",
         )
 
-    plt.tight_layout(pad=0.2)
+    plt.tight_layout(pad=0)
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=130, bbox_inches="tight", facecolor="#FFFFFF")
+    fig.savefig(buf, format="png", dpi=130, bbox_inches="tight",
+                facecolor="#FFFFFF")
     plt.close(fig)
     buf.seek(0)
     return buf
 
 
-# ── Header ────────────────────────────────────────────────────────────────────
-st.markdown(
-    """
-    <div class="app-header">
-        <h1>AISnack</h1>
-        <p>Malaysian snack detection &amp; price estimation powered by AI</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Settings")
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown('<div class="sb-label">Settings</div>', unsafe_allow_html=True)
 
     conf_thresh = st.slider(
         "Confidence threshold",
@@ -336,54 +368,63 @@ with st.sidebar:
     margin_thresh = st.slider(
         "Margin threshold",
         min_value=0.05, max_value=0.60, value=0.20, step=0.01,
-        help="Minimum gap between the top two class probabilities. "
-             "Low margin indicates an uncertain prediction.",
+        help="Minimum gap between the top two class probabilities.",
     )
 
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown("**Model info**")
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<div class="sb-label">About</div>', unsafe_allow_html=True)
     st.markdown(
         """
-        <div class="info-tile">
-            <div class="info-tile-label">Model</div>
-            <div class="info-tile-value">MobileNetV2</div>
-        </div>
-        <div class="info-tile">
-            <div class="info-tile-label">Proposals</div>
-            <div class="info-tile-value">Colour-based (HSV)</div>
-        </div>
-        <div class="info-tile">
-            <div class="info-tile-label">Classes</div>
-            <div class="info-tile-value">22 varieties</div>
-        </div>
-        <div class="info-tile">
-            <div class="info-tile-label">Currency</div>
-            <div class="info-tile-value">Malaysian Ringgit (RM)</div>
+        <div style="background:#F2F2F7; border-radius:14px; padding:4px 14px;">
+            <div class="sb-info-row">
+                <span class="sb-info-key">Model</span>
+                <span class="sb-info-val">MobileNetV2</span>
+            </div>
+            <div class="sb-info-row">
+                <span class="sb-info-key">Proposals</span>
+                <span class="sb-info-val">HSV colour</span>
+            </div>
+            <div class="sb-info-row">
+                <span class="sb-info-key">Classes</span>
+                <span class="sb-info-val">22 varieties</span>
+            </div>
+            <div class="sb-info-row">
+                <span class="sb-info-key">Currency</span>
+                <span class="sb-info-val">RM</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+
+# ── Header ────────────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div class="app-header">
+        <div class="app-title">AI<span class="app-dot">Snack</span></div>
+        <div class="app-subtitle">Malaysian snack detection &amp; price estimation</div>
+    </div>
+    <div class="divider"></div>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ── Upload ────────────────────────────────────────────────────────────────────
 uploaded_file = st.file_uploader(
-    "Upload a snack image",
+    "Upload an image",
     type=["jpg", "jpeg", "png", "webp"],
     label_visibility="collapsed",
 )
 
+# ── Empty state ───────────────────────────────────────────────────────────────
 if uploaded_file is None:
     st.markdown(
         """
-        <div class="card" style="text-align:center; padding:60px 24px;
-             border: 2px dashed #D1D5E8; background:rgba(255,255,255,0.6);
-             box-shadow:none;">
-            <div style="font-size:52px; margin-bottom:16px;">📸</div>
-            <div style="font-size:19px; font-weight:700; color:#1C1C1E; margin-bottom:8px;">
-                Drop a snack photo here
-            </div>
-            <div style="font-size:14px; color:#8E8E93;">
-                Supports JPG, PNG, and WebP · Use the uploader above
-            </div>
+        <div class="empty-state">
+            <div class="empty-icon">📷</div>
+            <div class="empty-title">No image selected</div>
+            <div class="empty-sub">Upload a photo of Malaysian snacks above<br>to detect items and estimate the total price.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -412,85 +453,68 @@ with st.spinner("Analysing image…"):
 
 detections = result["detections"]
 n_items    = len(detections)
-total      = result["total_price_rm"]
 
-# ── Stats bar ─────────────────────────────────────────────────────────────────
-st.markdown(
-    f"""
-    <div class="stats-bar">
-        <div class="stat-chip">
-            🍿&nbsp; <strong>{n_items}</strong>&nbsp;item{'s' if n_items != 1 else ''} detected
-        </div>
-        <div class="stat-chip stat-chip-accent">
-            💰&nbsp; RM {total:.2f} total
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# ── Detection result (full-width, tall image) ─────────────────────────────────
+st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Detection result</div>', unsafe_allow_html=True)
 
-# ── Detection image — full width ──────────────────────────────────────────────
-st.markdown(
-    '<div class="section-label">Detection result</div>',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="image-card">', unsafe_allow_html=True)
+if n_items > 0:
+    st.markdown(
+        f'<div class="det-badge">&#10003;&nbsp; {n_items} item{"s" if n_items != 1 else ""} detected</div>',
+        unsafe_allow_html=True,
+    )
+
 buf = annotate_image(img_bgr, result)
+
+st.markdown('<div class="img-card">', unsafe_allow_html=True)
 st.image(buf, use_container_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ── Price breakdown — below the image ─────────────────────────────────────────
-st.markdown(
-    '<div class="section-label">Price breakdown</div>',
-    unsafe_allow_html=True,
-)
+# ── Price breakdown ───────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Price breakdown</div>', unsafe_allow_html=True)
 
 if not detections:
     st.markdown(
         """
-        <div class="card" style="text-align:center; padding:48px 24px;">
-            <div style="font-size:40px; margin-bottom:14px;">🔍</div>
-            <div style="font-size:16px; font-weight:700; color:#1C1C1E; margin-bottom:6px;">
-                No snacks detected
-            </div>
-            <div style="font-size:13px; color:#8E8E93;">
-                Try lowering the Confidence slider in the sidebar.
-            </div>
+        <div class="no-det-card">
+            <div class="no-det-icon">🔍</div>
+            <div class="no-det-title">No snacks detected</div>
+            <div class="no-det-sub">Try lowering the Confidence threshold in the sidebar.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 else:
-    items_html = ""
+    rows_html = ""
     for label, info in result["breakdown"].items():
         name     = label.replace("_", " ").title()
         qty      = info["count"]
         unit     = info["unit_price_rm"]
         subtotal = info["subtotal_rm"]
-        items_html += f"""
-        <div class="breakdown-item">
-            <div class="breakdown-item-name">{name}</div>
-            <div class="breakdown-item-meta">RM {unit:.2f} &times; {qty}</div>
-            <div class="breakdown-item-price">RM {subtotal:.2f}</div>
+        rows_html += f"""
+        <div class="price-row">
+            <div>
+                <div class="price-item-name">{name}</div>
+                <div class="price-item-meta">RM {unit:.2f} × {qty}</div>
+            </div>
+            <div class="price-item-value">RM {subtotal:.2f}</div>
         </div>
         """
 
+    total = result["total_price_rm"]
     st.markdown(
         f"""
-        <div class="card" style="padding:20px;">
-            <div class="breakdown-grid">
-                {items_html}
-            </div>
+        <div class="ios-card">
+            {rows_html}
         </div>
-        <div class="total-card">
-            <div class="total-card-label">Total</div>
-            <div class="total-card-value">RM {total:.2f}</div>
+        <div class="total-bar">
+            <div class="total-label">Total</div>
+            <div class="total-value">RM {total:.2f}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("Raw detection data"):
         for det in detections:
             st.json({
