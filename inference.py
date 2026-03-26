@@ -19,7 +19,7 @@ def load_class_mapping(classes_path: str = "config/classes.json") -> Dict[int, s
     return {int(k): v for k, v in raw.items()}
 
 
-def load_trained_model(model_path: str = "models/snack_classifier.keras") -> tf.keras.Model:
+def load_trained_model(model_path: str = "models/snack_classifier.h5") -> tf.keras.Model:
     return tf.keras.models.load_model(model_path)
 
 

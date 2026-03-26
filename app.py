@@ -58,7 +58,7 @@ PALETTE = [
 # ── Cached model loading ──────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading model…")
 def load_resources():
-    model = load_trained_model(str(ROOT / "models" / "snack_classifier.keras"))
+    model = load_trained_model(str(ROOT / "models" / "snack_classifier.h5"))
     class_mapping = load_class_mapping(str(ROOT / "config" / "classes.json"))
     prices = load_prices(str(ROOT / "config" / "prices.json"))
     return model, class_mapping, prices
