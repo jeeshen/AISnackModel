@@ -18,7 +18,6 @@ ROOT = Path(__file__).parent
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AISnack – Price Detector",
-    page_icon="🍟",
     layout="wide",
 )
 
@@ -68,7 +67,7 @@ def load_resources():
 def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     h_px, w_px = img_rgb.shape[:2]
-    figw = 12
+    figw = 18
     figh = figw * h_px / w_px
 
     fig, ax = plt.subplots(1, figsize=(figw, figh))
@@ -134,14 +133,14 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
     plt.tight_layout(pad=0.5)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(buf, format="png", dpi=130, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return buf
 
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.title("🍟 AISnack — Malaysian Snack Price Detector")
+st.title("AISnack — Malaysian Snack Price Detector")
 st.caption(
     "Upload a photo of Malaysian snacks and the app will identify each one "
     "and calculate the total price automatically."
@@ -149,7 +148,7 @@ st.caption(
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ Detection settings")
+    st.header("Detection Settings")
     conf_thresh = st.slider(
         "Confidence threshold",
         min_value=0.50, max_value=0.99, value=0.80, step=0.01,
@@ -167,6 +166,12 @@ with st.sidebar:
         "**Classes**  \n22 Malaysian snack varieties  \n"
         "**Currency**  \nMalaysian Ringgit (RM)"
     )
+    st.divider()
+    st.markdown("**Credits**")
+    st.markdown(
+        "Data Collection  \nTew Jun Xiang & Jason Chong  \n\n"
+        "Model Training  \nChan Jee Shen"
+    )
 
 # ── Main area ─────────────────────────────────────────────────────────────────
 uploaded_file = st.file_uploader(
@@ -174,7 +179,7 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is None:
-    st.info("👆 Upload a photo of snacks to get started.")
+    st.info("Upload a photo of snacks to get started.")
     st.stop()
 
 model, class_mapping, prices = load_resources()
@@ -196,15 +201,15 @@ with st.spinner("Detecting snacks…"):
         margin_threshold=margin_thresh,
     )
 
-col_img, col_price = st.columns([3, 2], gap="large")
+col_img, col_price = st.columns([5, 2], gap="large")
 
 with col_img:
-    st.subheader("📸 Detection result")
+    st.subheader("Detection Result")
     buf = annotate_image(img_bgr, result)
     st.image(buf, use_container_width=True)
 
 with col_price:
-    st.subheader("🧾 Price breakdown")
+    st.subheader("Price Breakdown")
     detections = result["detections"]
 
     if not detections:
@@ -221,7 +226,7 @@ with col_price:
             st.markdown(
                 f"""
                 <div class="snack-row">
-                    <span>🍫 <b>{name}</b> × {qty}
+                    <span><b>{name}</b> × {qty}
                         <span style="color:#888; font-size:13px"> @ RM {unit:.2f}</span>
                     </span>
                     <span><b>RM {subtotal:.2f}</b></span>
