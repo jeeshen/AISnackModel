@@ -12,179 +12,78 @@ matplotlib.use("Agg")
 
 from inference import analyze_image, load_class_mapping, load_prices, load_trained_model
 
+# Absolute path to the repo root — works locally and on Streamlit Cloud
 ROOT = Path(__file__).parent
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AISnack",
-    page_icon="assets/icon.png" if (ROOT / "assets/icon.png").exists() else None,
+    page_title="AISnack – Price Detector",
+    page_icon="🍟",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
-# ── iOS-inspired design system ────────────────────────────────────────────────
+# ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue",
-                     Arial, sans-serif;
+    .total-box {
+        background: linear-gradient(135deg, #f58231, #e6194b);
+        border-radius: 12px;
+        padding: 20px 28px;
+        text-align: center;
+        color: white;
     }
-
-    /* Page background */
-    .stApp {
-        background-color: #F2F2F7;
-    }
-
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #FFFFFF;
-        border-right: 1px solid #E5E5EA;
-    }
-    [data-testid="stSidebar"] .stMarkdown p {
-        color: #8E8E93;
-        font-size: 13px;
-    }
-
-    /* Cards */
-    .card {
-        background: #FFFFFF;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 16px;
-    }
-
-    /* Section label */
-    .section-label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #8E8E93;
-        margin-bottom: 12px;
-    }
-
-    /* Price row */
-    .price-row {
+    .total-label { font-size: 14px; opacity: 0.85; margin-bottom: 4px; }
+    .total-value { font-size: 42px; font-weight: 800; letter-spacing: -1px; }
+    .snack-row {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 13px 0;
-        border-bottom: 1px solid #F2F2F7;
-    }
-    .price-row:last-child {
-        border-bottom: none;
-    }
-    .price-row-name {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
         font-size: 15px;
-        font-weight: 500;
-        color: #1C1C1E;
-    }
-    .price-row-meta {
-        font-size: 13px;
-        color: #8E8E93;
-        margin-top: 2px;
-    }
-    .price-row-value {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1C1C1E;
-        white-space: nowrap;
-    }
-
-    /* Total card */
-    .total-card {
-        background: #007AFF;
-        border-radius: 16px;
-        padding: 22px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-    }
-    .total-card-label {
-        font-size: 15px;
-        font-weight: 600;
-        color: rgba(255,255,255,0.80);
-        letter-spacing: 0.01em;
-    }
-    .total-card-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #FFFFFF;
-        letter-spacing: -0.5px;
-    }
-
-    /* Upload zone */
-    [data-testid="stFileUploader"] {
-        background: #FFFFFF;
-        border-radius: 16px;
-        padding: 8px;
-    }
-
-    /* Streamlit headings */
-    h1 {
-        font-weight: 700;
-        font-size: 28px !important;
-        color: #1C1C1E !important;
-        letter-spacing: -0.5px;
-    }
-    h3 {
-        font-weight: 600;
-        font-size: 17px !important;
-        color: #1C1C1E !important;
-    }
-
-    /* Hide default Streamlit branding */
-    #MainMenu, footer { visibility: hidden; }
-
-    /* Divider */
-    hr {
-        border: none;
-        border-top: 1px solid #E5E5EA;
-        margin: 20px 0;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ── Colour palette for bounding boxes ────────────────────────────────────────
+# ── Palette ───────────────────────────────────────────────────────────────────
 PALETTE = [
-    "#007AFF", "#34C759", "#FF9500", "#FF3B30",
-    "#AF52DE", "#5AC8FA", "#FF2D55", "#FFCC00",
-    "#30B0C7", "#32ADE6", "#64D2FF", "#BF5AF2",
+    "#e6194b", "#3cb44b", "#4363d8", "#f58231",
+    "#911eb4", "#42d4f4", "#f032e6", "#bfef45",
+    "#fabed4", "#469990", "#dcbeff", "#9a6324",
 ]
 
 
-# ── Model (cached across reruns) ──────────────────────────────────────────────
-@st.cache_resource(show_spinner="Loading model...")
+# ── Cached model loading ──────────────────────────────────────────────────────
+@st.cache_resource(show_spinner="Loading model…")
 def load_resources():
-    model       = load_trained_model(str(ROOT / "models" / "snack_classifier.h5"))
-    class_map   = load_class_mapping(str(ROOT / "config" / "classes.json"))
-    prices      = load_prices(str(ROOT / "config" / "prices.json"))
-    return model, class_map, prices
+    model = load_trained_model(str(ROOT / "models" / "snack_classifier.h5"))
+    class_mapping = load_class_mapping(str(ROOT / "config" / "classes.json"))
+    prices = load_prices(str(ROOT / "config" / "prices.json"))
+    return model, class_mapping, prices
 
 
-# ── Annotation ────────────────────────────────────────────────────────────────
+# ── Annotation helper ─────────────────────────────────────────────────────────
 def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     h_px, w_px = img_rgb.shape[:2]
-    fig, ax = plt.subplots(figsize=(12, 12 * h_px / w_px))
-    fig.patch.set_facecolor("#FFFFFF")
-    ax.set_facecolor("#FFFFFF")
+    figw = 12
+    figh = figw * h_px / w_px
+
+    fig, ax = plt.subplots(1, figsize=(figw, figh))
     ax.imshow(img_rgb)
     ax.axis("off")
+    fig.patch.set_facecolor("#1a1a2e")
+    ax.set_facecolor("#1a1a2e")
 
     label_color: dict[str, str] = {}
     color_idx = 0
 
     for det in result["detections"]:
         label = det["label"]
-        conf  = det["confidence"]
-        b     = det["bbox"]
+        conf = det["confidence"]
+        b = det["bbox"]
         x, y, w, h = b["x"], b["y"], b["w"], b["h"]
 
         if label not in label_color:
@@ -192,123 +91,102 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
             color_idx += 1
         color = label_color[label]
 
-        lw = max(2, w_px // 600)
-        ax.add_patch(mpatches.FancyBboxPatch(
+        rect = mpatches.FancyBboxPatch(
             (x, y), w, h,
             boxstyle="square,pad=0",
-            linewidth=lw,
+            linewidth=max(1, w_px // 800),
             edgecolor=color,
             facecolor="none",
-        ))
-
-        fs = max(8, w_px // 260)
+        )
+        ax.add_patch(rect)
         ax.text(
-            x + lw + 2, y + lw + 2,
+            x + 4, y + 4,
             f"{label.replace('_', ' ')}  {conf:.0%}",
-            color="#FFFFFF",
-            fontsize=fs,
-            fontweight="semibold",
+            color="white",
+            fontsize=max(7, w_px // 300),
+            fontweight="bold",
             va="top",
-            bbox=dict(facecolor=color, alpha=0.90, pad=3, linewidth=0,
-                      boxstyle="round,pad=0.3"),
+            bbox=dict(facecolor=color, alpha=0.82, pad=2, linewidth=0),
         )
 
-    if label_color:
-        legend = [
-            mpatches.Patch(color=c, label=lbl.replace("_", " ").title())
-            for lbl, c in label_color.items()
-        ]
+    legend_handles = [
+        mpatches.Patch(color=c, label=lbl.replace("_", " ").title())
+        for lbl, c in label_color.items()
+    ]
+    if legend_handles:
         ax.legend(
-            handles=legend,
+            handles=legend_handles,
             loc="upper right",
-            fontsize=max(8, w_px // 300),
-            framealpha=0.92,
-            edgecolor="#E5E5EA",
-            facecolor="#FFFFFF",
+            fontsize=9,
+            framealpha=0.88,
+            title="Detected snacks",
         )
 
-    n     = len(result["detections"])
+    n = len(result["detections"])
     total = result["total_price_rm"]
     ax.set_title(
-        f"{n} item{'s' if n != 1 else ''} detected  —  RM {total:.2f}",
-        fontsize=max(10, w_px // 250),
-        fontweight="semibold",
-        color="#1C1C1E",
-        pad=12,
+        f"{n} detection{'s' if n != 1 else ''}  ·  Total: RM {total:.2f}",
+        fontsize=13,
+        fontweight="bold",
+        color="white",
+        pad=10,
     )
+    plt.tight_layout(pad=0.5)
 
-    plt.tight_layout(pad=0.4)
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight",
-                facecolor="#FFFFFF")
+    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return buf
 
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.title("AISnack")
-st.caption("Malaysian snack detection and price estimation.")
-st.markdown("<hr>", unsafe_allow_html=True)
+st.title("🍟 AISnack — Malaysian Snack Price Detector")
+st.caption(
+    "Upload a photo of Malaysian snacks and the app will identify each one "
+    "and calculate the total price automatically."
+)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Settings")
-
+    st.header("⚙️ Detection settings")
     conf_thresh = st.slider(
-        "Confidence",
+        "Confidence threshold",
         min_value=0.50, max_value=0.99, value=0.80, step=0.01,
-        help="Minimum probability for a detection to be accepted.",
+        help="Minimum softmax score for a detection to be accepted.",
     )
     margin_thresh = st.slider(
-        "Margin",
+        "Margin threshold",
         min_value=0.05, max_value=0.60, value=0.20, step=0.01,
-        help="Minimum gap between the top two class probabilities. "
-             "Low margin indicates an uncertain prediction.",
+        help="Minimum gap between the top-1 and top-2 class probabilities. "
+             "A low margin means the model is uncertain.",
     )
-
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.divider()
     st.markdown(
-        "**Model**  \nMobileNetV2\n\n"
-        "**Proposals**  \nColour-based (HSV)\n\n"
-        "**Classes**  \n22 varieties\n\n"
+        "**Model**  \nMobileNetV2 + custom colour-based region proposals  \n"
+        "**Classes**  \n22 Malaysian snack varieties  \n"
         "**Currency**  \nMalaysian Ringgit (RM)"
     )
 
-# ── Upload ────────────────────────────────────────────────────────────────────
+# ── Main area ─────────────────────────────────────────────────────────────────
 uploaded_file = st.file_uploader(
-    "Upload an image",
-    type=["jpg", "jpeg", "png", "webp"],
-    label_visibility="collapsed",
+    "Choose an image", type=["jpg", "jpeg", "png", "webp"]
 )
 
 if uploaded_file is None:
-    st.markdown(
-        """
-        <div class="card" style="text-align:center; padding: 48px 24px;">
-            <div style="font-size:17px; font-weight:600; color:#1C1C1E; margin-bottom:8px;">
-                No image selected
-            </div>
-            <div style="font-size:15px; color:#8E8E93;">
-                Upload a photo using the button above.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.info("👆 Upload a photo of snacks to get started.")
     st.stop()
 
-# ── Inference ─────────────────────────────────────────────────────────────────
 model, class_mapping, prices = load_resources()
 
 file_bytes = np.frombuffer(uploaded_file.read(), np.uint8)
-img_bgr    = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
 if img_bgr is None:
     st.error("Could not decode the image. Please try a different file.")
     st.stop()
 
-with st.spinner("Analysing image..."):
+with st.spinner("Detecting snacks…"):
     result = analyze_image(
         img_bgr=img_bgr,
         model=model,
@@ -318,73 +196,59 @@ with st.spinner("Analysing image..."):
         margin_threshold=margin_thresh,
     )
 
-# ── Results ───────────────────────────────────────────────────────────────────
 col_img, col_price = st.columns([3, 2], gap="large")
 
 with col_img:
-    st.markdown('<div class="section-label">Detection result</div>',
-                unsafe_allow_html=True)
-    st.markdown('<div class="card" style="padding:12px;">', unsafe_allow_html=True)
+    st.subheader("📸 Detection result")
     buf = annotate_image(img_bgr, result)
     st.image(buf, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with col_price:
-    st.markdown('<div class="section-label">Price breakdown</div>',
-                unsafe_allow_html=True)
-
+    st.subheader("🧾 Price breakdown")
     detections = result["detections"]
 
     if not detections:
-        st.markdown(
-            """
-            <div class="card" style="text-align:center; padding:40px 24px;">
-                <div style="font-size:15px; font-weight:600; color:#1C1C1E; margin-bottom:6px;">
-                    No snacks detected
-                </div>
-                <div style="font-size:13px; color:#8E8E93;">
-                    Try lowering the Confidence slider in the sidebar.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.warning(
+            "No snacks detected. Try lowering the **confidence threshold** in the sidebar."
         )
     else:
-        rows_html = ""
-        for label, info in result["breakdown"].items():
-            name     = label.replace("_", " ").title()
-            qty      = info["count"]
-            unit     = info["unit_price_rm"]
+        breakdown = result["breakdown"]
+        for label, info in breakdown.items():
+            name = label.replace("_", " ").title()
+            qty = info["count"]
             subtotal = info["subtotal_rm"]
-            rows_html += f"""
-            <div class="price-row">
-                <div>
-                    <div class="price-row-name">{name}</div>
-                    <div class="price-row-meta">RM {unit:.2f} x {qty}</div>
+            unit = info["unit_price_rm"]
+            st.markdown(
+                f"""
+                <div class="snack-row">
+                    <span>🍫 <b>{name}</b> × {qty}
+                        <span style="color:#888; font-size:13px"> @ RM {unit:.2f}</span>
+                    </span>
+                    <span><b>RM {subtotal:.2f}</b></span>
                 </div>
-                <div class="price-row-value">RM {subtotal:.2f}</div>
-            </div>
-            """
+                """,
+                unsafe_allow_html=True,
+            )
 
+        st.write("")
         total = result["total_price_rm"]
         st.markdown(
             f"""
-            <div class="card">
-                {rows_html}
-            </div>
-            <div class="total-card">
-                <div class="total-card-label">Total</div>
-                <div class="total-card-value">RM {total:.2f}</div>
+            <div class="total-box">
+                <div class="total-label">TOTAL PRICE</div>
+                <div class="total-value">RM {total:.2f}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.write("")
         with st.expander("Raw detection data"):
             for det in detections:
-                st.json({
-                    "label":      det["label"],
-                    "confidence": round(det["confidence"], 4),
-                    "bbox":       det["bbox"],
-                })
+                st.json(
+                    {
+                        "label": det["label"],
+                        "confidence": round(det["confidence"], 4),
+                        "bbox": det["bbox"],
+                    }
+                )
