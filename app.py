@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 
 import cv2
 import matplotlib
@@ -10,6 +11,9 @@ import streamlit as st
 matplotlib.use("Agg")
 
 from inference import analyze_image, load_class_mapping, load_prices, load_trained_model
+
+# Absolute path to the repo root — works locally and on Streamlit Cloud
+ROOT = Path(__file__).parent
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
