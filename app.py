@@ -25,15 +25,27 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .total-box {
-        background: linear-gradient(135deg, #f58231, #e6194b);
-        border-radius: 12px;
-        padding: 20px 28px;
-        text-align: center;
-        color: white;
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-top: 2px solid #222;
+        margin-top: 12px;
+        padding-top: 14px;
     }
-    .total-label { font-size: 14px; opacity: 0.85; margin-bottom: 4px; }
-    .total-value { font-size: 42px; font-weight: 800; letter-spacing: -1px; }
+    .total-label {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #888;
+    }
+    .total-value {
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        color: #e6194b;
+    }
     .snack-row {
         display: flex;
         justify-content: space-between;
@@ -232,13 +244,12 @@ else:
             unsafe_allow_html=True,
         )
 
-    st.write("")
     total = result["total_price_rm"]
     st.markdown(
         f"""
-        <div class="total-box">
-            <div class="total-label">TOTAL PRICE</div>
-            <div class="total-value">RM {total:.2f}</div>
+        <div class="total-row">
+            <span class="total-label">Total Price</span>
+            <span class="total-value">RM {total:.2f}</span>
         </div>
         """,
         unsafe_allow_html=True,
