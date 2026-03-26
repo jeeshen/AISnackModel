@@ -17,7 +17,7 @@ ROOT = Path(__file__).parent
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AISnack – Price Detector",
+    page_title="Snack Price Detector",
     layout="wide",
 )
 
@@ -140,7 +140,7 @@ def annotate_image(img_bgr: np.ndarray, result: dict) -> io.BytesIO:
 
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.title("AISnack — Malaysian Snack Price Detector")
+st.title("Malaysian Snack Price Detector")
 st.caption(
     "Upload a photo of Malaysian snacks and the app will identify each one "
     "and calculate the total price automatically."
@@ -162,8 +162,8 @@ with st.sidebar:
     )
     st.divider()
     st.markdown(
-        "**Model**  \nMobileNetV2 + custom colour-based region proposals  \n"
-        "**Classes**  \n22 Malaysian snack varieties  \n"
+        "**Model**  \nMobileNetV2  \n\n"
+        "**Classes**  \n22 Malaysian snack varieties  \n\n"
         "**Currency**  \nMalaysian Ringgit (RM)"
     )
     st.divider()
@@ -201,59 +201,56 @@ with st.spinner("Detecting snacks…"):
         margin_threshold=margin_thresh,
     )
 
-col_img, col_price = st.columns([5, 2], gap="large")
+st.subheader("Detection Result")
+buf = annotate_image(img_bgr, result)
+st.image(buf, use_container_width=True)
 
-with col_img:
-    st.subheader("Detection Result")
-    buf = annotate_image(img_bgr, result)
-    st.image(buf, use_container_width=True)
+st.divider()
+st.subheader("Price Breakdown")
+detections = result["detections"]
 
-with col_price:
-    st.subheader("Price Breakdown")
-    detections = result["detections"]
-
-    if not detections:
-        st.warning(
-            "No snacks detected. Try lowering the **confidence threshold** in the sidebar."
-        )
-    else:
-        breakdown = result["breakdown"]
-        for label, info in breakdown.items():
-            name = label.replace("_", " ").title()
-            qty = info["count"]
-            subtotal = info["subtotal_rm"]
-            unit = info["unit_price_rm"]
-            st.markdown(
-                f"""
-                <div class="snack-row">
-                    <span><b>{name}</b> × {qty}
-                        <span style="color:#888; font-size:13px"> @ RM {unit:.2f}</span>
-                    </span>
-                    <span><b>RM {subtotal:.2f}</b></span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        st.write("")
-        total = result["total_price_rm"]
+if not detections:
+    st.warning(
+        "No snacks detected. Try lowering the **confidence threshold** in the sidebar."
+    )
+else:
+    breakdown = result["breakdown"]
+    for label, info in breakdown.items():
+        name = label.replace("_", " ").title()
+        qty = info["count"]
+        subtotal = info["subtotal_rm"]
+        unit = info["unit_price_rm"]
         st.markdown(
             f"""
-            <div class="total-box">
-                <div class="total-label">TOTAL PRICE</div>
-                <div class="total-value">RM {total:.2f}</div>
+            <div class="snack-row">
+                <span><b>{name}</b> × {qty}
+                    <span style="color:#888; font-size:13px"> @ RM {unit:.2f}</span>
+                </span>
+                <span><b>RM {subtotal:.2f}</b></span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.write("")
-        with st.expander("Raw detection data"):
-            for det in detections:
-                st.json(
-                    {
-                        "label": det["label"],
-                        "confidence": round(det["confidence"], 4),
-                        "bbox": det["bbox"],
-                    }
-                )
+    st.write("")
+    total = result["total_price_rm"]
+    st.markdown(
+        f"""
+        <div class="total-box">
+            <div class="total-label">TOTAL PRICE</div>
+            <div class="total-value">RM {total:.2f}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.write("")
+    with st.expander("Raw detection data"):
+        for det in detections:
+            st.json(
+                {
+                    "label": det["label"],
+                    "confidence": round(det["confidence"], 4),
+                    "bbox": det["bbox"],
+                }
+            )
