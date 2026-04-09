@@ -14,7 +14,7 @@ Point a camera at a collection of Malaysian snacks and the app identifies every 
 ## Installation
 ```bash
 # clone the repo
-git clone https://github.com/yourusername/AISnack.git
+git clone https://github.com/jeeshen/AISnack.git
 
 # navigate to project directory
 cd AISnack
